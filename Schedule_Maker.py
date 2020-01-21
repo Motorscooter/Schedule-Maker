@@ -17,33 +17,45 @@ def schedule_creator(year=0, month=0, day=0, num_of_days=0):
     end_col = 1
     workbook = Workbook(str(start_date.year)+str(start_date.month) + str(start_date.day) + '.xlsx')
     worksheet = workbook.add_worksheet('Schedule')
-    cell_format = workbook.add_format()
-    cell_format.set_border(1)
-    cell_format.set_bold()
-    cell_format.set_align('center')
-    cell_format.set_align('vcenter')
-    month_format = workbook.add_format()
-    month_format.set_left(2)
-    month_format.set_right(2)
-    year_format = workbook.add_format()
-    year_format.set_left(5)
-    year_format.set_right(5)
+    cell_format = workbook.add_format({'bold':1,'align':'center','valign':'vcenter','border':1})
+    month_format = workbook.add_format({'bold':1,'align':'center','valign':'vcenter','left':1,'right':1})
+    year_format = workbook.add_format({'bold':1,'align':'center','valign':'vcenter','left':1,'right':1})
     delta_days = end_date - iter_date
     while delta_days.days >= 0:
         while iter_date.month <= 12:
             max_days = max(calendar.monthrange(iter_date.year, iter_date.month))
-            while iter_date.day <= max_days or delta_days.days >= 0:
-                worksheet.write(2, end_col, day_list[calendar.weekday(iter_date.year, iter_date.month, iter_date.day)],
+            while True:
+                if calendar.weekday(iter_date.year,iter_date.month, iter_date.day) > 4:
+                    iter_date = iter_date + datetime.timedelta(days=1)
+                    delta_days = end_date - iter_date
+                    if iter_date.day == max_days or delta_days.days == 0:
+                        end_col += 1
+                        break
+                    continue
+                if iter_date.day == max_days or delta_days.days == 0:
+                    worksheet.write(2, end_col,
+                                    calendar.day_abbr[calendar.weekday(iter_date.year, iter_date.month, iter_date.day)],
+                                    cell_format)
+                    worksheet.write(3, end_col, iter_date.day, cell_format)
+                    end_col += 1
+                    break
+                worksheet.write(2, end_col, calendar.day_abbr[calendar.weekday(iter_date.year, iter_date.month, iter_date.day)],
                                 cell_format)
                 worksheet.write(3, end_col, iter_date.day, cell_format)
                 iter_date = iter_date + datetime.timedelta(days=1)
                 end_col += 1
                 delta_days = end_date - iter_date
             worksheet.merge_range(1, month_start_col, 1, end_col, calendar.month_name[iter_date.month], cell_format)
-            worksheet.set_column(month_start_col, end_col, month_format)
-            month_start_col = end_col + 1
-        worksheet.merge_range(0,year_start_col, 0, end_col, cell_format)
-        worksheet.set_column(year_start_col, end_col, year_format)
+            month_start_col = end_col
+
+            if delta_days.days == 0 or iter_date.month == 12:
+                break
+            iter_date = iter_date + datetime.timedelta(days=1)
+        worksheet.merge_range(0,year_start_col, 0, end_col,iter_date.year, cell_format)
+        worksheet.set_column(month_start_col, end_col, None, year_format)
+        if delta_days.days == 0:
+            break
+        iter_date = iter_date + datetime.timedelta(days=1)
     workbook.close()
 
 
